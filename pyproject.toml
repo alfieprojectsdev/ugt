@@ -1,0 +1,35 @@
+[project]
+name = "sprott-chaos-2026"
+version = "0.1.0"
+description = "A JAX-accelerated re-investigation of the Chaotic Sprott Circuit (Thesis Do-Over)."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "Alfie R. Pelicano", email = "alfieprojects.dev@gmail.com" }
+]
+dependencies = [
+    "jax>=0.4.20",
+    "jaxlib>=0.4.20",
+    "numpy>=1.26.0",
+    "matplotlib>=3.8.0",
+    "scipy>=1.11.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "black>=23.9.0",
+    "ruff>=0.1.0",
+    "ipykernel>=6.25.0", # For Jupyter support if needed
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+# Ruff config for high-velocity linting
+line-length = 88
+target-version = "py311"
+select = ["E", "F", "I"] # Pyflakes, pycodestyle, isort
