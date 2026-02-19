@@ -26,3 +26,13 @@ build/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+
+# Thesis
+Investigating the Dynamics of a Chaotic Sprott Circuit.pdf
+
+# Thesis LaTeX
+main.aux
+main.fdb_latexmk
+main.fls
+main.log
+main.pdf

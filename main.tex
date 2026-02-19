@@ -1,0 +1,81 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- UNIVERSAL PREAMBLE BLOCK ---
+\usepackage[a4paper, top=2.5cm, bottom=2.5cm, left=2cm, right=2cm]{geometry}
+\usepackage{fontspec}
+
+\usepackage[english, bidi=basic, provide=*]{babel}
+
+\babelprovide[import, onchar=ids fonts]{english}
+
+% Set default/Latin font to Sans Serif in the main (rm) slot
+\babelfont{rm}{Noto Sans}
+% --------------------------------
+
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{hyperref}
+
+\title{Investigating the Dynamics of a Chaotic Sprott Circuit:\\A 2026 Longitudinal Synthesis and High-Performance Re-evaluation}
+\author{Alfie R. Pelicano\\ \textit{alfieprojects.dev@gmail.com}}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+[PLACEHOLDER: NotebookLM to generate Abstract after literature review and numerical results are finalized. The abstract will summarize the transition from the 2004 single-threaded Wolf's algorithm approach to the 2026 JAX-accelerated Jacobian methodology, highlighting the newly resolved bifurcation boundaries.]
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+The phenomenon of chaos in low-dimensional ordinary differential equations (ODEs) has transitioned over the last two decades from a mathematical curiosity to a foundational element in modern computational systems, secure communications, and agentic modeling. In 2004, an initial investigation was conducted on a modified Sprott circuit subject to a sinusoidally varying resistance. 
+
+[PLACEHOLDER: NotebookLM to inject updated 2026 literature review here. Synthesize how the understanding of piecewise linear chaotic flows has evolved since Linz and Sprott's 1999 paper, specifically relating to high-dimensional parameter sweeps and their applications in modern physics/AI.]
+
+\section{Methodology: Architectural Refactoring}
+\label{sec:methodology}
+
+\subsection{The Modified Sprott System}
+The nonlinear system examined in both the original 2004 study and this current re-evaluation is given by:
+\begin{equation}
+\frac{d^3x}{dt^3} = -A\frac{d^2x}{dt^2} - \frac{dx}{dt} + |x| - 1
+\end{equation}
+where $A$ is an inverse resistance oscillating about a typical value $R_C = 1.67\Omega$ that gives rise to chaos, modified explicitly as:
+\begin{equation}
+A = \frac{1}{R_C + R\sin(\omega t)}
+\end{equation}
+
+\subsection{2004 Legacy Implementation}
+In the original study, solutions were obtained using a sequential $4^{th}$ order Runge-Kutta algorithm implemented in Fortran. The system's dynamics were characterized using Wolf's algorithm to estimate the Largest Lyapunov Exponent (LLE) from the generated time series using phase space reconstruction via delay coordinates. This data-driven approach, while rigorous for its time, was computationally prohibitive for high-resolution global parameter sweeps.
+
+\subsection{2026 High-Performance Architecture}
+To overcome the limitations of the legacy methodology, the numerical engine was refactored using Python and JAX (Just-In-Time compilation via XLA). Furthermore, the data-driven Wolf's algorithm was replaced with an equation-driven Jacobian calculation (Benettin's algorithm).
+
+By augmenting the state vector with the tangent vector $\mathbf{w}$, we evolve the perturbation alongside the physical state using the system's Jacobian matrix $J$:
+\begin{equation}
+\dot{\mathbf{w}} = J(\mathbf{x}) \cdot \mathbf{w}
+\end{equation}
+The Largest Lyapunov Exponent, $\lambda_1$, is then calculated by periodically renormalizing $\mathbf{w}$ to prevent numerical overflow and averaging the logarithm of the expansion rates. This approach, heavily vectorized using \texttt{jax.vmap}, allows for the simultaneous evaluation of thousands of $(R, \omega)$ parameter pairs across distributed infrastructure.
+
+\section{Results and Discussion}
+\label{sec:results}
+
+\subsection{Verification of the Fluctuating DLE Regime}
+The original 2004 study observed that at parameter bands $0 \le \omega \le 2.75$ radians, the dominant Lyapunov exponent fluctuated erratically. 
+
+[PLACEHOLDER: Insert analysis of the new JAX-generated baseline run from lle\_solver.py. Compare the precision of the new Jacobian-derived LLEs against the old Wolf-algorithm estimates.]
+
+\subsection{High-Resolution Bifurcation Analysis}
+By leveraging the vectorized JAX architecture, a high-resolution sweep of the $\omega$ parameter space was conducted, something that was computationally infeasible in 2004.
+
+[PLACEHOLDER: Insert High-Resolution Parameter Sweep Figure here. This will be the output from the JAX script showing the sharp bifurcation boundaries.]
+
+[PLACEHOLDER: NotebookLM to synthesize the discussion. How does the high-resolution map change our understanding of the "averaging behavior" observed in 2004 for $R < 0.05\Omega$? Connect this back to the modern literature.]
+
+\section{Conclusions}
+\label{sec:conclusions}
+[PLACEHOLDER: NotebookLM to draft conclusions based on the final outputs of the Results section. Must reiterate the value of upgrading legacy scientific methodologies with modern high-performance computational tools.]
+
+\end{document}
