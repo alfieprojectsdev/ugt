@@ -1,13 +1,45 @@
+import os
+import time
+from functools import partial
+
 import jax
 import jax.numpy as jnp
 from jax import jit, vmap
-import time
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-from mpl_toolkits.mplot3d import Axes3D
+
+# Lyapunov exponents accumulate a log-norm over thousands of renormalizations,
+# so float32 (JAX's default) is not enough precision. Must be set before any
+# array is created.
+jax.config.update("jax_enable_x64", True)
+
+import matplotlib  # noqa: E402  (backend must be chosen before pyplot import)
+
+# This project is expected to run headless over SSH, where plt.show() renders
+# to nothing at all. Pick a file-writing backend when there is no display.
+if not os.environ.get("DISPLAY"):
+    matplotlib.use("Agg")
+
+import matplotlib.pyplot as plt  # noqa: E402
+from matplotlib.animation import FuncAnimation  # noqa: E402
+from mpl_toolkits.mplot3d import Axes3D  # noqa: E402,F401
 
 # --- Configuration ---
 MODE = "PP"  # Options: "RT" (Real-Time Animation) or "PP" (Post-Processing Plot)
+FIGURE_DIR = "figures"
+
+
+def save_figure(filename):
+    """Write the current figure to FIGURE_DIR; show it only if a display exists."""
+    os.makedirs(FIGURE_DIR, exist_ok=True)
+    path = os.path.join(FIGURE_DIR, filename)
+    plt.savefig(path, dpi=200, bbox_inches="tight")
+    print(f"Figure written to {path}")
+    if matplotlib.get_backend().lower() != "agg":
+        plt.show()
+    return path
+
+
+def is_headless():
+    return matplotlib.get_backend().lower() == "agg"
 
 # --- 1. The Physics Model (The "Logic") ---
 
@@ -57,11 +89,14 @@ def rk4_step(state, t, dt, params):
 
 # --- 3. The Simulation Loop (The "Time Evolution") ---
 
-@jit
+@partial(jit, static_argnums=(2,))
 def simulate_trajectory(initial_state, params, time_steps, dt):
     """
     Simulates a full trajectory for a SINGLE set of parameters.
     Returns the full time series of states.
+
+    `time_steps` is static: lax.scan needs a concrete length, and a plain @jit
+    would trace it into a tracer. Each distinct value triggers a recompile.
     """
     def step_fn(carry, _):
         curr_state, curr_t = carry
@@ -154,9 +189,15 @@ if __name__ == "__main__":
         ax.set_ylabel("dx/dt (y)")
         ax.set_zlabel("d2x/dt2 (z)")
         ax.set_title(f"Sprott Circuit Phase Space (PP Mode)\nR={R_amps[0]}, Omega={omegas[0]:.2f}")
-        plt.show()
+        save_figure("phase_space_pp.png")
 
     elif MODE == "RT":
+        if is_headless():
+            raise SystemExit(
+                "MODE='RT' needs an interactive display; this session has none.\n"
+                "Set MODE='PP' to render a static phase-space plot to "
+                f"{FIGURE_DIR}/ instead."
+            )
         print("Initializing Real-Time Animation...")
         # For RT, we usually simulate chunks or step-by-step.
         # Since JAX is fast, we can simulate a chunk, plot it, then simulate next.

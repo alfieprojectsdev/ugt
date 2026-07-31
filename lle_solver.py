@@ -1,11 +1,15 @@
+import time
+from functools import partial
+
 import jax
 import jax.numpy as jnp
-from jax import jit, vmap, jacfwd
-import time
-import matplotlib.pyplot as plt
+from jax import jacfwd, jit, vmap
 
-# Import the base physics equation
-from sprott_solver import sprott_equations
+# Import the base physics equation. sprott_solver also enables float64 and
+# selects a headless-safe matplotlib backend at import time — see its header.
+# `plt` is re-exported from there deliberately: importing pyplot directly here
+# would load it before that backend choice is made, which breaks headless runs.
+from sprott_solver import plt, save_figure, sprott_equations
 
 # --- 1. The Tangent Dynamics (Variational Equations) ---
 
@@ -46,11 +50,15 @@ def rk4_step_aug(aug_state, t, dt, params):
 
 # --- 3. The LLE Calculation Loop (Benettin's Algorithm) ---
 
-@jit
+@partial(jit, static_argnums=(2, 4))
 def calculate_lle(initial_state, params, total_steps, dt, norm_interval=10):
     """
     Calculates the Largest Lyapunov Exponent (LLE) using the Jacobian method.
     Renormalizes the tangent vector every `norm_interval` steps to prevent overflow.
+
+    `total_steps` and `norm_interval` are static: both lax.scan calls need a
+    concrete length, and under a plain @jit they arrive as tracers. Each
+    distinct pair triggers a recompile.
     """
     
     # Initial setup
@@ -135,15 +143,18 @@ if __name__ == "__main__":
     
     # 2. Run
     start_time = time.time()
-    
-    # JIT Compile & Run
-    lles, _ = batch_lle(initial_state, batch_params, STEPS, DT, 10).block_until_ready()
-    
+
+    # batch_lle returns a (lle, log_history) TUPLE — block on the array, not on
+    # the tuple. This timing therefore covers JIT compilation as well as the
+    # sweep itself; a second call would report the run cost alone.
+    lles, _ = batch_lle(initial_state, batch_params, STEPS, DT, 10)
+    lles = jax.block_until_ready(lles)
+
     end_time = time.time()
-    print(f"Execution Time: {end_time - start_time:.4f}s")
+    print(f"Compile + Execution Time: {end_time - start_time:.4f}s")
+    print(f"Precision: {lles.dtype}")
     
     # 3. Plotting (Recreating Thesis Figure 5.1)
-    # If MODE is headless, we might skip plt.show() but here we assume local run
     plt.figure(figsize=(10, 6))
     plt.plot(omegas, lles, linewidth=0.8, color='black')
     plt.title("Largest Lyapunov Exponent vs Omega (JAX Jacobian Method)")
@@ -153,4 +164,4 @@ if __name__ == "__main__":
     plt.grid(True, alpha=0.3)
     
     print("Plotting results...")
-    plt.show()
+    save_figure("lle_vs_omega.png")
