@@ -110,6 +110,27 @@ count) and a chaotic band (many bins, low count) both visible.
 
 Results from the ThinkPad test run are in `results/` and summarised in `docs/thinkpad-test-run.md`.
 
+## Building the paper
+
+`main.tex` compiles with [Tectonic](https://tectonic-typesetting.github.io/) (XeTeX, single binary,
+fetches packages on demand; about 60 MB all told) or with LuaLaTeX from a full TeX Live. The
+preamble is engine-conditional: under LuaTeX it keeps `bidi=basic` and `onchar=ids fonts`, under
+XeTeX it drops them (English-only document, no effect on output). Noto Sans must be installed as a
+system font.
+
+Install in WSL without root:
+
+```bash
+curl -sSL https://github.com/tectonic-typesetting/tectonic/releases/download/tectonic%400.17.0/tectonic-0.17.0-x86_64-unknown-linux-musl.tar.gz | tar xz -C ~/.local/bin tectonic
+apt-get download fonts-noto-core && dpkg -x fonts-noto-core_*.deb /tmp/noto && mkdir -p ~/.local/share/fonts && cp /tmp/noto/usr/share/fonts/truetype/noto/NotoSans-{Regular,Bold,Italic,BoldItalic}.ttf ~/.local/share/fonts/ && fc-cache -f
+```
+
+Build:
+
+```bash
+tectonic --outdir build main.tex
+```
+
 ## Original Acknowledgements (2004)
 
 This work reflects the academic environment of the National Institute of Physics at UP Diliman. The original thesis included administrative certifications of successful defense and personal acknowledgements to the thesis adviser and colleagues.
