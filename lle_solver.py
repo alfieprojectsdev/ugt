@@ -1,3 +1,5 @@
+from functools import partial
+
 import jax
 import jax.numpy as jnp
 from jax import jit, vmap, jacfwd
@@ -46,7 +48,11 @@ def rk4_step_aug(aug_state, t, dt, params):
 
 # --- 3. The LLE Calculation Loop (Benettin's Algorithm) ---
 
-@jit
+# |state| beyond this is treated as escape to infinity (attractor has |x| < 3)
+ESCAPE_BOUND = 1e3
+
+# total_steps and norm_interval set scan lengths, so they must be static
+@partial(jit, static_argnames=("total_steps", "norm_interval"))
 def calculate_lle(initial_state, params, total_steps, dt, norm_interval=10):
     """
     Calculates the Largest Lyapunov Exponent (LLE) using the Jacobian method.
@@ -103,7 +109,17 @@ def calculate_lle(initial_state, params, total_steps, dt, norm_interval=10):
     final_log_sum = final_carry[2]
     total_time = total_steps * dt
     lle = final_log_sum / total_time
-    
+
+    # Escape guard.  For x < 0 the flow is linear with an unstable complex
+    # pair (roots of s^3 + A s^2 + s + 1 for A < 1), so an orbit that leaves
+    # the attractor's basin grows exponentially and the tangent vector reports
+    # that growth rate (~0.1-0.16) as if it were a Lyapunov exponent, even
+    # after the state has overflowed.  Unbounded solutions are not chaos
+    # (thesis ch. 1, criterion 1); mark them NaN.
+    final_state = final_carry[0][:3]
+    bounded = jnp.all(jnp.isfinite(final_state)) & (jnp.max(jnp.abs(final_state)) < ESCAPE_BOUND)
+    lle = jnp.where(bounded, lle, jnp.nan)
+
     return lle, log_history
 
 # --- 4. Vectorization ---
@@ -118,7 +134,9 @@ if __name__ == "__main__":
     DT = 0.05 
     # Use fewer steps for quick demo, but enough to converge
     STEPS = 50000 
-    R_C = 1.67
+    # Sprott's A = 0.6 exactly.  The thesis text writes R_c = 1.67 (rounded); the 2004
+    # code used 1/0.6, and 1.67 itself sits in a period-5 window (see verify.py, check rc).
+    R_C = 1.0 / 0.6
     
     # 1. Define Parameter Sweep (High Resolution for 1D)
     # Scanning Omega from 0 to 2.75 (The fluctuating region from your thesis)
@@ -137,7 +155,8 @@ if __name__ == "__main__":
     start_time = time.time()
     
     # JIT Compile & Run
-    lles, _ = batch_lle(initial_state, batch_params, STEPS, DT, 10).block_until_ready()
+    lles, _ = batch_lle(initial_state, batch_params, STEPS, DT, 10)
+    lles = lles.block_until_ready()
     
     end_time = time.time()
     print(f"Execution Time: {end_time - start_time:.4f}s")

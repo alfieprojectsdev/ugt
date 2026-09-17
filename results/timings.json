@@ -1,0 +1,123 @@
+{
+  "host": "reese",
+  "cpu": "",
+  "python": "3.12.14",
+  "jax": "0.11.1",
+  "devices": [
+    "cpu:0"
+  ],
+  "x64": false,
+  "quick": false,
+  "R_c": 1.6666666666666667,
+  "stages": {
+    "trajectories": {
+      "n_params": 6,
+      "steps": 32768,
+      "compile_s": 0.23,
+      "run_s": 0.03,
+      "nan": false,
+      "steps_per_s": 6573364,
+      "seconds": 1.72
+    },
+    "lle_omega": {
+      "steps": 60000,
+      "full_R0.15": {
+        "seconds": 6.0,
+        "n": 800,
+        "max_drift_last10pct": 0.004211242381962688,
+        "mean_bits_per_s": 0.07089067899311874
+      },
+      "full_R0.05": {
+        "seconds": 5.5,
+        "n": 800,
+        "max_drift_last10pct": 0.0045461646771420665,
+        "mean_bits_per_s": 0.057570740921866675
+      },
+      "zoom_R0.15": {
+        "seconds": 4.6,
+        "n": 600,
+        "max_drift_last10pct": 0.006908479750469085,
+        "mean_bits_per_s": 0.0656502923789192
+      },
+      "zoom_R0.05": {
+        "seconds": 4.6,
+        "n": 600,
+        "max_drift_last10pct": 0.004288930556394947,
+        "mean_bits_per_s": 0.060011035001706105
+      },
+      "plateau_bits_R0.15_omega>5": 0.07182157808657641,
+      "seconds": 21.47
+    },
+    "bif_rc": {
+      "n_params": 1200,
+      "n_transient": 40000,
+      "n_keep": 40000,
+      "peaks_total": 322936,
+      "seconds": 3.88
+    },
+    "bif_omega": {
+      "n_params": 1200,
+      "peak_map_s": 4.6,
+      "strobe_s": 15.4,
+      "strobe_cfg": {
+        "steps_per_period": 512,
+        "transient_periods": 200,
+        "periods": 300
+      },
+      "seconds": 21.58
+    },
+    "bif_ramp": {
+      "n_params": 1200,
+      "seconds": 10.27
+    },
+    "lle_map": {
+      "grid": [
+        60,
+        80
+      ],
+      "steps": 30000,
+      "escaped_fraction": 0.45,
+      "chaotic_fraction_of_bounded": 0.9640151515151515,
+      "max_R_amp_fully_bounded": 0.15254237288135591,
+      "seconds": 17.18
+    },
+    "thesis_grid": {
+      "n_R": 7,
+      "n_omega": 5120,
+      "steps": 32768,
+      "aug_steps_per_s": 7767801,
+      "plateau_omega_gt_2.75": {
+        "0.15": {
+          "mean_bits": 0.0707,
+          "std_bits": 0.007
+        },
+        "0.1": {
+          "mean_bits": 0.0659,
+          "std_bits": 0.0083
+        },
+        "0.05": {
+          "mean_bits": 0.0563,
+          "std_bits": 0.0089
+        },
+        "0.025": {
+          "mean_bits": 0.0576,
+          "std_bits": 0.009
+        },
+        "0.0125": {
+          "mean_bits": 0.0527,
+          "std_bits": 0.0089
+        },
+        "0.00625": {
+          "mean_bits": 0.0513,
+          "std_bits": 0.0088
+        },
+        "0.003125": {
+          "mean_bits": 0.05,
+          "std_bits": 0.0087
+        }
+      },
+      "seconds": 152.05
+    }
+  },
+  "total_seconds": 228.2
+}
