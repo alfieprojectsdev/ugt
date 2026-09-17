@@ -14,7 +14,7 @@ The 2026 iteration leverages **JAX** for accelerated numerical integration and L
 
 1.  **Model Verification**: Re-implement the modified Sprott circuit equations:
     $$ \dddot{x} = -A\ddot{x} - \dot{x} + |x| - 1 $$
-    Where $A = (R_c + R_{amp} \sin(\omega t))^{-1}$.
+    Where $A = (R_c + R_{amp} \sin(\omega t))^{-1}$ and $R_c = 1/0.6$ (see the note on $R_c$ below).
 2.  **Stability Analysis**: Investigate how the sinusoidally varying resistance ($R_{amp} \sin(\omega t)$) influences the stability and chaotic nature of the system.
 3.  **Quantification of Chaos**: Compute the Maximal Lyapunov Exponent (LLE) to identify chaotic regions in the parameter space.
 
@@ -24,8 +24,18 @@ Python 3.12 and JAX, CPU or GPU.
 
 - `sprott_solver.py`: RK4 integrator for the ODE, `jax.lax.scan` inside `jit`, `vmap` over a parameter batch.
 - `lle_solver.py`: largest Lyapunov exponent by Benettin's method. The tangent vector is evolved with the Jacobian from `jax.jacfwd`, renormalised every 10 steps.
+- `lyapunov_spectrum.py`: all three exponents by Gram-Schmidt on a 3x3 tangent frame, with per-parameter block standard errors, the Kaplan-Yorke dimension, and the trace check sum(lambda) = -<A>. Use this rather than `lle_solver.py` for anything that gets published.
+- `wolf_fet.py`: Wolf's fixed-evolution-time estimator from a scalar series, reimplemented from the 2004 thesis's Appendix B with its parameters, for comparing against the 2004 numbers.
 - `bifurcation.py`: Poincare-section bifurcation diagrams (see below).
 - `run_all.py`: headless driver that runs every stage and writes PNGs, NPZ data and `timings.json` to `results/`.
+- `verify.py`: the checks behind the numbers (Wolf vs Benettin, dt convergence, spectrum, error bars, and which R_c the 2004 code used). Writes to `results/verify/`.
+
+### A note on R_c
+
+The thesis text gives R_c = 1.67 ohm. The 2004 code used A = 0.6 exactly, i.e. R_c = 1/0.6 = 1.6667:
+rerunning its protocol with 1/0.6 reproduces the seven plateau values in its Fig 5.5 to 0.0035 bits
+rms, while 1.67 misses by 0.043 bits because 1.67 sits inside a period-5 window of the unforced
+system. All scripts default to 1/0.6; `run_all.py --rc 1.67` gives the rounded value.
 
 ## Installation
 
@@ -57,6 +67,7 @@ python run_all.py            # everything, results/
 python run_all.py --quick    # ~4x smaller sweeps, smoke test
 python run_all.py --stages lle_omega,bif_omega
 python run_all.py --x64      # float64
+python verify.py             # numerical checks, ~12 min
 ```
 
 Stages:

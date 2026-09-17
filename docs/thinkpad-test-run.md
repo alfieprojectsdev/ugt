@@ -1,8 +1,9 @@
 # ThinkPad T14 test run, 2026-09-17
 
 Full run of the pipeline on the laptop before the Dell R740 run. Everything here was produced by
-`python run_all.py` from commit on branch `claude/thesis-thinkpad-bifurcation-5c739e`; figures are in
-`results/`, raw per-stage numbers in `results/timings.json` and `results_full.log`.
+`python run_all.py` and `python verify.py` on branch `claude/thesis-thinkpad-bifurcation-5c739e`;
+figures are in `results/` and `results/verify/`, numbers in `results/timings.json` and
+`results/verify/verify.json`.
 
 ## Environment
 
@@ -59,50 +60,87 @@ maps near the escape boundary.
 ## Results against the thesis
 
 Thesis values are in bits/s from Wolf's algorithm on the x time series; ours are Benettin/Jacobian
-exponents converted with 1/ln 2.
+exponents converted with 1/ln 2. All figures in `results/` are from the corrected R_c = 1/0.6 run;
+the first-pass R_c = 1.67 figures are kept in `results_rc1.67/` (untracked).
 
-**Plateau, omega > 2.75 (thesis Fig 5.5).** Mean +/- std over 3 420 omega values per R:
+### The R_c correction, and a retracted claim
 
-| R | thesis (bits/s) | this run (bits) | unforced LLE at R_eff = sqrt(R_c^2 - R^2), same step count |
+The first pass used R_c = 1.67 as printed in the thesis text and in this repo's scripts, and found
+the plateau for omega > 2.75 collapsing to zero for R <= 0.0125 while the thesis reports about
+0.055 bits/s for every R. I first attributed that to a positive floor in Wolf's algorithm. That was
+wrong, and `verify.py` shows why on two counts:
+
+1. Wolf's FET with the thesis's own parameters (tau = 15, dim = 4, evolve = 9, dismin 2 %, dismax
+   15 %, thmax 30 deg, 2^15 samples) returns -0.0005 and +0.0002 bits on the period-5 orbit at
+   R_c = 1.67, with and without the transient. It has no floor. On chaotic series it runs 0.01 to
+   0.02 bits above Benettin, so it is biased high but not by 0.05. (`v1_wolf_vs_benettin.png`)
+2. Rerunning the plateau with R_c = 1/0.6 = 1.6667, which is Sprott's A = 0.6 exactly, reproduces
+   all seven thesis values with an rms deviation of 0.0035 bits, inside their quoted std. With
+   R_c = 1.67 the rms deviation is 0.043 bits. (`verify.json`, check `rc`)
+
+So the 2004 Fortran used A_0 = 0.6 and the text rounded it to 1.67 ohm. The rounded value happens
+to fall inside a period-5 window of the unforced system (about 1.67 to 1.72 in
+`03_bif_rc_unforced.png`), which is why the first pass diverged from the thesis at small R. The
+repo now defaults to R_c = 1/0.6 everywhere; `run_all.py --rc 1.67` reproduces the first pass.
+
+### Plateau, omega > 2.75 (thesis Fig 5.5)
+
+Mean +/- std over 3 420 omega values per R, 2^15 steps, R_c = 1/0.6:
+
+| R | thesis (bits/s) | this run (bits) | full spectrum at omega = 10, 200k steps: lambda_1 +/- SE, lambda_3 (nats), D_KY |
 |---|---|---|---|
-| 0.15 | 0.0666 +/- 0.0072 | 0.0654 +/- 0.0082 | 0.075 |
-| 0.10 | 0.0625 +/- 0.0075 | 0.0539 +/- 0.0096 | 0.052 |
-| 0.05 | 0.0552 +/- 0.0078 | 0.0318 +/- 0.0104 | 0.041 |
-| 0.025 | 0.0547 +/- 0.0074 | 0.0067 +/- 0.0049 | 0.007 |
-| 0.0125 | 0.0559 +/- 0.0079 | -0.0025 +/- 0.0034 | -0.003 |
-| 0.00625 | 0.0551 +/- 0.0079 | -0.0045 +/- 0.0027 | -0.004 |
-| 0.003125 | 0.0544 +/- 0.0078 | -0.0027 +/- 0.0019 | -0.003 |
+| 0.15 | 0.0666 +/- 0.0072 | 0.0707 +/- 0.0070 | 0.0517 +/- 0.0018, -0.654, 2.079 |
+| 0.10 | 0.0625 +/- 0.0075 | 0.0659 +/- 0.0083 | 0.0447 +/- 0.0023, -0.646, 2.069 |
+| 0.05 | 0.0552 +/- 0.0078 | 0.0563 +/- 0.0089 | 0.0416 +/- 0.0025, -0.643, 2.067 |
+| 0.025 | 0.0547 +/- 0.0074 | 0.0576 +/- 0.0090 | 0.0407 +/- 0.0024, -0.641, 2.063 |
+| 0.0125 | 0.0559 +/- 0.0079 | 0.0527 +/- 0.0089 | 0.0379 +/- 0.0027, -0.639, 2.060 |
+| 0.00625 | 0.0551 +/- 0.0079 | 0.0513 +/- 0.0088 | 0.0372 +/- 0.0022, -0.638, 2.059 |
+| 0.003125 | 0.0544 +/- 0.0078 | 0.0500 +/- 0.0087 | 0.0351 +/- 0.0026, -0.636, 2.056 |
 
-Two things follow.
+The plateau is reproduced. Three things the 2004 study could not say about it:
 
-The "averaging behaviour" the thesis observed and proposed to explain with a multiple-timescale
-argument checks out quantitatively: the plateau equals the unforced exponent at the period-averaged
-conductance <A> = 1/sqrt(R_c^2 - R^2), within one standard deviation for all seven R. The plateau
-rises with R because <A> rises with R, moving the effective operating point deeper into the chaotic
-band.
+The "averaging behaviour" has a quantitative form. With the first-pass R_c the plateau matched the
+unforced exponent at R_eff = sqrt(R_c^2 - R^2) within 1 sigma for all seven R (the multiple-timescale
+argument the thesis proposed in its conclusions). With R_c = 1/0.6 the effective point moves from
+1.6667 at R = 0 to 1.660 at R = 0.15, which is why the plateau rises with R: <A> = 1/sqrt(R_c^2 - R^2)
+increases with R and pushes the operating point deeper into the chaotic band. The trace identity
+sum(lambda) = -<A> holds to a median of 1e-5 nats across 300 omega values (`v3_spectrum.png`).
 
-The thesis's finding that "for R < 0.05 the average DLE values for higher omega no longer decrease"
-(plateau stuck near 0.055 bits/s) is not reproduced. The reason is at the unforced limit: R_c = 1.67
-is Sprott's A = 0.6 rounded, and A = 0.5988 lies inside a period-5 window of the unforced system
-(see `03_bif_rc_unforced.png`; the window runs from about 1.67 to 1.72). Spot check, float64,
-2^19 steps: LLE(R_c = 1.6667) = +0.054 bits (chaotic, matches the literature value of about
-0.036 nats), LLE(R_c = 1.67) = -0.013 bits (periodic). So for R small enough that the modulation
-stays inside the window, the system is periodic and the exponent is zero or negative. Wolf's
-algorithm on a finite noisy series has a positive floor and cannot return a negative exponent, which
-is the likely origin of the 0.055 plateau. This is worth a paragraph in the re-evaluation paper: the
-2004 "chaos baseline" was, in the R -> 0 limit, a period-5 orbit.
+The scatter in the thesis's Fig 5.1 and 5.5 is finite-time noise, not omega dependence. The
+per-parameter block standard error of a 2^15-step estimate is 0.006 to 0.007 bits; the across-omega
+std the thesis quotes as its uncertainty is 0.006 to 0.010 bits, a ratio of 0.9 to 1.5. To resolve
+real omega structure in the plateau, integrate 10 to 100 times longer. That is an R740 job.
 
-**Fluctuating band, 0 <= omega <= 2.75 (thesis Figs 5.1, 5.4).** Reproduced in outline: the R = 0.15
-curve has its highest values near omega = 1.9 (0.10 bits here, 0.12 in the thesis) and the R-ordering
-of the curves is preserved. What the thesis's Bezier smoothing hid is that the band contains
-periodic windows where the exponent drops to zero or below: omega = 0.38, 0.49, 0.63, 0.77, 1.15,
-1.47, 1.63, 1.75, 1.93, 2.68 at R = 0.15. The two "minima" the thesis reports near omega = 1 and 2.75
-are the two widest of these windows.
+The Kaplan-Yorke dimension on the plateau is 2.06 to 2.08 and increases with R, a second measure of
+chaos strength that agrees with the exponent ordering.
 
-**Boundedness.** R = 0.15 is the largest amplitude for which every omega in [0, 2.75] stays bounded
-(`lle_map` reports 0.153). Above that, orbits escape for omega in roughly [0, 0.9] and [1.3, 2.2],
-with a tongue of bounded chaos around omega = 1.1 that survives to R = 0.6. The thesis chose 0.15 as
-its largest R without stating why; this is presumably why.
+### Fluctuating band, 0 <= omega <= 2.75 (thesis Figs 5.1, 5.4)
+
+Reproduced: all seven curves sit in the 0.05 to 0.08 bits band, small-R curves are flat near 0.055
+with dips, and the R = 0.15 curve peaks near omega = 1.9 (0.10 bits here, 0.12 in the thesis). What
+the thesis's Bezier smoothing hid is that the dips are resonances where the modulation locks the
+system into a periodic window: omega = 0.19, 0.38, 0.58, 0.95, 1.15, 1.33, 1.52, 1.92, 2.10, 2.50,
+2.68 at R = 0.15, and the deepest of them (1.52, 1.92, 2.10) suppress chaos even at R = 0.025. The
+two "minima" the thesis reports near omega = 1 and 2.75 are the two widest windows.
+
+### Boundedness
+
+R = 0.15 is the largest amplitude for which every omega in [0, 2.75] stays bounded (`lle_map`
+reports 0.153 at 30 000 steps; not yet checked at longer times). Above that, orbits escape for
+omega in roughly [0, 0.9] and [1.3, 2.2], with a tongue of bounded chaos around omega = 1.1 that
+survives to R = 0.6. The thesis chose 0.15 as its largest R without stating why; this is presumably
+why.
+
+### Numerical checks (`verify.py`)
+
+dt: at fixed total time T = 3000, float64, the exponent at dt = 0.05 agrees with dt = 0.0125 within
+1.8 block-SE at 11 of 12 test points. The exception is omega = 0.38 (a window edge), where the
+negative exponent goes from -0.02 to -0.08 bits. dt = 0.05 is adequate for chaotic values at the
++/- 0.007 bits level and not for the magnitude of negative exponents inside windows.
+(`v2_dt_convergence.png`)
+
+Spectrum: lambda_2 is zero to within 0.002 nats on chaotic orbits (it is the negative exponent
+inside windows, where lambda_1 becomes the zero one), and the trace check passes.
 
 ## Bifurcation diagrams: what was tried and what to use
 
@@ -112,7 +150,7 @@ Poincare sections were implemented in `bifurcation.py`; both are `vmap`-batched 
 Peak map (local maxima of x, the section Sprott uses for jerk systems) is the one to use for this
 system. It works with the forcing on or off, it reproduces the textbook Linz-Sprott cascade for the
 unforced sweep in R_c (period doubling from R_c = 1.36, chaos from 1.55, period-5 window at
-1.67-1.72, attractor destroyed at 1.83, i.e. A = 0.55), and in the forced sweep in omega every
+1.67-1.72 just above the operating point 1/0.6, attractor destroyed at 1.83, i.e. A = 0.55), and in the forced sweep in omega every
 periodic window is a sharp gap with visible period-doubling structure inside.
 
 Stroboscopic map (state once per forcing period) is the textbook section for periodically forced
@@ -142,3 +180,9 @@ be worth the minutes it costs.
   changes.
 - Escape detection is inside `calculate_lle`; any new sweep that goes beyond R = 0.15 or outside
   R_c in [1.55, 1.82] depends on it.
+- Use `lyapunov_spectrum.py` rather than `lle_solver.py` for anything that will be published: it
+  costs about 3x, gives all three exponents, D_KY, per-parameter error bars, and the trace check.
+- The 2^15-step estimate has a 0.007-bit standard error. Resolving the plateau's omega dependence
+  needs 2^19 to 2^20 steps per parameter; that is the first thing the R740 should be spent on.
+- `verify.py` (about 12 minutes, dominated by the brute-force Wolf search) should be rerun there
+  as the acceptance test.

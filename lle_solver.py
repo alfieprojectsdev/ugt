@@ -134,7 +134,9 @@ if __name__ == "__main__":
     DT = 0.05 
     # Use fewer steps for quick demo, but enough to converge
     STEPS = 50000 
-    R_C = 1.67
+    # Sprott's A = 0.6 exactly.  The thesis text writes R_c = 1.67 (rounded); the 2004
+    # code used 1/0.6, and 1.67 itself sits in a period-5 window (see verify.py, check rc).
+    R_C = 1.0 / 0.6
     
     # 1. Define Parameter Sweep (High Resolution for 1D)
     # Scanning Omega from 0 to 2.75 (The fluctuating region from your thesis)

@@ -41,3 +41,5 @@ results*/*.npz
 results_quick/
 results_full.log
 requirements.txt
+results_rc1.67/
+results*/**/*.npz

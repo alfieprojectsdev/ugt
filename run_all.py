@@ -35,6 +35,7 @@ ap.add_argument("--quick", action="store_true")
 ap.add_argument("--x64", action="store_true")
 ap.add_argument("--out", default="results")
 ap.add_argument("--stages", default="all", help="comma list, e.g. lle_omega,bif_omega")
+ap.add_argument("--rc", type=float, default=1.0 / 0.6, help="R_c; 1/0.6 is Sprott A=0.6 and what the 2004 code used, 1.67 is the rounded value in the thesis text")
 args = ap.parse_args()
 
 import jax  # noqa: E402
@@ -55,7 +56,7 @@ OUT = args.out
 os.makedirs(OUT, exist_ok=True)
 Q = 0.25 if args.quick else 1.0
 DT = 0.05
-R_C = 1.67
+R_C = args.rc
 R_AMP = 0.15
 X0 = jnp.array([0.05, 0.0, 0.0])
 timings = {
@@ -66,8 +67,15 @@ timings = {
     "devices": [str(d) for d in jax.devices()],
     "x64": args.x64,
     "quick": args.quick,
+    "R_c": R_C,
     "stages": {},
 }
+# a partial --stages run keeps the other stages' entries from the previous timings.json
+try:
+    with open(os.path.join(OUT, "timings.json")) as f:
+        timings["stages"] = json.load(f).get("stages", {})
+except (OSError, ValueError):
+    pass
 
 
 def want(stage):
@@ -197,13 +205,14 @@ def stage_lle_omega():
 
 def stage_bif_rc():
     n = int(1200 * Q)
-    rcs = np.linspace(1.3, 2.3, n)  # A = 1/R_c from 0.77 down to 0.43
+    rcs = np.linspace(1.3, 1.9, n)  # A = 1/R_c from 0.77 down to 0.53; orbits escape past ~1.83
     P = params_for(rcs, 0.0, 0.0)
     n_tr, n_keep = int(40000 * Q), int(40000 * Q)
     peaks = peak_map_batch(X0, P, DT, n_tr, n_keep)
     fig, ax = plt.subplots(figsize=(12, 7))
     scatter_bifurcation(ax, rcs, peaks)
-    ax.axvline(R_C, color="red", lw=0.6, ls="--", label=f"R_c = {R_C} (thesis baseline)")
+    ax.axvline(1.0 / 0.6, color="red", lw=0.6, ls="--", label="R_c = 1/0.6 (Sprott A = 0.6, 2004 code)")
+    ax.axvline(1.67, color="tab:blue", lw=0.6, ls=":", label="R_c = 1.67 (thesis text, rounded)")
     ax.set_xlabel("R_c   (A = 1/R_c, unforced: R_amp = 0)")
     ax.set_ylabel("local maxima of x")
     ax.set_title("Peak-map bifurcation diagram of the unforced Sprott/Linz jerk system")
@@ -350,7 +359,7 @@ def stage_thesis_grid():
     ax.plot(omegas, bits[0], lw=0.4, color="black")
     ax.set_xlabel("omega (rad / time unit)")
     ax.set_ylabel("LLE (bits / time unit)")
-    ax.set_title(f"(R=0.15, omega): {len(omegas)} points, 2^15 steps, dt=0.05  [thesis Fig 5.1]")
+    ax.set_title(f"(R=0.15, omega): {len(omegas)} points, 2^15 steps, dt=0.05, R_c={R_C:.4f}  [thesis Fig 5.1]")
     ax.grid(alpha=0.3)
     fig.tight_layout()
     fig.savefig(os.path.join(OUT, "07_thesis_fig51.png"), dpi=130)

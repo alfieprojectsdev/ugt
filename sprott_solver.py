@@ -92,7 +92,9 @@ if __name__ == "__main__":
     # 1. Configuration
     DT = 0.05  # Matches Thesis Chapter 4
     STEPS = 32768 # 2^15, Matches Thesis Chapter 4
-    R_C = 1.67 # Thesis value for chaos baseline
+    # Sprott's A = 0.6 exactly.  The thesis text writes R_c = 1.67 (rounded); the 2004
+    # code used 1/0.6, and 1.67 itself sits in a period-5 window (see verify.py, check rc).
+    R_C = 1.0 / 0.6
     
     # 2. Define Parameter Space (The "Sweep")
     # Let's create a batch of 10 different Omega values to test vectorization
