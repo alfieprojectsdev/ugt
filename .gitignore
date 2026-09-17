@@ -36,3 +36,8 @@ main.fdb_latexmk
 main.fls
 main.log
 main.pdf
+# Run outputs (PNG + timings.json under results/ are tracked; bulk data is not)
+results*/*.npz
+results_quick/
+results_full.log
+requirements.txt

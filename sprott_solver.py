@@ -1,3 +1,5 @@
+from functools import partial
+
 import jax
 import jax.numpy as jnp
 from jax import jit, vmap
@@ -57,7 +59,8 @@ def rk4_step(state, t, dt, params):
 
 # --- 3. The Simulation Loop (The "Time Evolution") ---
 
-@jit
+# time_steps sets the scan length, so it must be a static (compile-time) argument
+@partial(jit, static_argnames=("time_steps",))
 def simulate_trajectory(initial_state, params, time_steps, dt):
     """
     Simulates a full trajectory for a SINGLE set of parameters.

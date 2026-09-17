@@ -1,0 +1,91 @@
+{
+  "host": "reese",
+  "cpu": "",
+  "python": "3.12.14",
+  "jax": "0.11.1",
+  "devices": [
+    "cpu:0"
+  ],
+  "x64": false,
+  "quick": false,
+  "stages": {
+    "lle_omega": {
+      "steps": 60000,
+      "full_R0.15": {
+        "seconds": 5.5,
+        "n": 800,
+        "max_drift_last10pct": 0.004809397108340156,
+        "mean_bits_per_s": 0.06594402262321937
+      },
+      "full_R0.05": {
+        "seconds": 5.5,
+        "n": 800,
+        "max_drift_last10pct": 0.0058708238616399025,
+        "mean_bits_per_s": 0.03403794903274169
+      },
+      "zoom_R0.15": {
+        "seconds": 4.5,
+        "n": 600,
+        "max_drift_last10pct": 0.004605954047155211,
+        "mean_bits_per_s": 0.06633815848887636
+      },
+      "zoom_R0.05": {
+        "seconds": 3.9,
+        "n": 600,
+        "max_drift_last10pct": 0.00426449943287744,
+        "mean_bits_per_s": 0.05907190223883838
+      },
+      "plateau_bits_R0.15_omega>5": 0.06596302133168186,
+      "seconds": 20.26
+    },
+    "lle_map": {
+      "grid": [
+        60,
+        80
+      ],
+      "steps": 30000,
+      "escaped_fraction": 0.456875,
+      "chaotic_fraction_of_bounded": 0.9071729957805907,
+      "max_R_amp_fully_bounded": 0.15254237288135591,
+      "seconds": 21.51
+    },
+    "thesis_grid": {
+      "n_R": 7,
+      "n_omega": 5120,
+      "steps": 32768,
+      "aug_steps_per_s": 7837043,
+      "plateau_omega_gt_2.75": {
+        "0.15": {
+          "mean_bits": 0.0654,
+          "std_bits": 0.0082
+        },
+        "0.1": {
+          "mean_bits": 0.0539,
+          "std_bits": 0.0096
+        },
+        "0.05": {
+          "mean_bits": 0.0318,
+          "std_bits": 0.0104
+        },
+        "0.025": {
+          "mean_bits": 0.0067,
+          "std_bits": 0.0049
+        },
+        "0.0125": {
+          "mean_bits": -0.0025,
+          "std_bits": 0.0034
+        },
+        "0.00625": {
+          "mean_bits": -0.0045,
+          "std_bits": 0.0027
+        },
+        "0.003125": {
+          "mean_bits": -0.0027,
+          "std_bits": 0.0019
+        }
+      },
+      "seconds": 150.86
+    }
+  },
+  "total_seconds": 192.6
+}

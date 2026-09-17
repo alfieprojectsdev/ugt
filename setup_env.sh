@@ -7,9 +7,9 @@
 # 1. Install uv (if not present)
 if ! command -v uv &> /dev/null; then
     echo "Installing uv..."
-    curl -LsSf [https://astral.sh/uv/install.sh](https://astral.sh/uv/install.sh) | sh
+    curl -LsSf https://astral.sh/uv/install.sh | sh
     # Ensure uv is in path for this session
-    source $HOME/.cargo/env
+    export PATH="$HOME/.local/bin:$PATH"
 else
     echo "uv is already installed."
 fi

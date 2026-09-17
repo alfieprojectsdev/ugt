@@ -20,38 +20,84 @@ The 2026 iteration leverages **JAX** for accelerated numerical integration and L
 
 ## Technical Implementation
 
-The project is modernized using Python 3.11+ and the JAX ecosystem:
+Python 3.12 and JAX, CPU or GPU.
 
--   **`sprott_solver.py`**: Solves the system of ODEs using a custom RK4 integrator. Supports both "Real-Time" (RT) animation and "Post-Processing" (PP) batch simulation.
--   **`lle_solver.py`**: Computes the Largest Lyapunov Exponent using Benettin's algorithm. It utilizes `jax.jacfwd` for automatic Jacobian computation, replacing manual linearization.
--   **`setup_env.sh`**: A helper script to set up the environment using `uv`.
+- `sprott_solver.py`: RK4 integrator for the ODE, `jax.lax.scan` inside `jit`, `vmap` over a parameter batch.
+- `lle_solver.py`: largest Lyapunov exponent by Benettin's method. The tangent vector is evolved with the Jacobian from `jax.jacfwd`, renormalised every 10 steps.
+- `bifurcation.py`: Poincare-section bifurcation diagrams (see below).
+- `run_all.py`: headless driver that runs every stage and writes PNGs, NPZ data and `timings.json` to `results/`.
 
-## Installation & Usage
+## Installation
 
-### Prerequisites
--   Python 3.11+
--   [uv](https://github.com/astral-sh/uv) (automatically installed by setup script if missing)
-
-### Setup
-Initialize the environment:
 ```bash
-./setup_env.sh
-source .venv/bin/activate
+uv venv .venv --python 3.12
+uv pip install --python .venv/bin/python jax jaxlib numpy matplotlib scipy
 ```
 
-### Running Simulations
+`setup_env.sh` does the same and also installs the dev extras.
 
-**Trajectory Visualization:**
-```bash
-python sprott_solver.py
-```
-*Edit `MODE` in `sprott_solver.py` to switch between Real-Time animation and Batch processing.*
+### Windows note (Smart App Control)
 
-**Lyapunov Exponent Sweep:**
+On a Windows 11 machine with Smart App Control turned on, `import jax` fails with
+`DLL load failed ... An Application Control policy has blocked this file` (event ID 3077 in
+`Microsoft-Windows-CodeIntegrity/Operational`). The jaxlib and matplotlib wheels ship unsigned
+native extensions that the policy refuses. Smart App Control has no per-application exception list;
+the only alternatives are to turn it off (irreversible without reinstalling Windows) or to run in
+WSL2. The test run recorded below used WSL2 Ubuntu with the venv on the Linux filesystem:
+
 ```bash
-python lle_solver.py
+wsl -d Ubuntu -- bash -lc 'uv venv ~/.venvs/sprott --python 3.12 && uv pip install --python ~/.venvs/sprott/bin/python jax jaxlib numpy matplotlib scipy'
+wsl -d Ubuntu -- bash -c 'cd /mnt/c/path/to/repo && ~/.venvs/sprott/bin/python run_all.py'
 ```
-*This will perform a parameter sweep over $\omega$ and plot the LLE spectrum.*
+
+## Running
+
+```bash
+python run_all.py            # everything, results/
+python run_all.py --quick    # ~4x smaller sweeps, smoke test
+python run_all.py --stages lle_omega,bif_omega
+python run_all.py --x64      # float64
+```
+
+Stages:
+
+| stage | what | output |
+|---|---|---|
+| `trajectories` | phase portraits at six omegas | `01_trajectories.png` |
+| `lle_omega` | LLE vs omega on [0, 20] and a dense pass on [0, 3], R = 0.15 and 0.05 | `02_lle_vs_omega.png` |
+| `bif_rc` | bifurcation vs R_c, unforced (R = 0) | `03_bif_rc_unforced.png` |
+| `bif_omega` | bifurcation vs omega, peak map and stroboscopic | `04_bif_omega.png` |
+| `bif_ramp` | bifurcation vs R at omega = 1 and 2 | `05_bif_ramp.png` |
+| `lle_map` | LLE over the (R, omega) plane | `06_lle_map.png` |
+| `thesis_grid` | the 2004 protocol verbatim: 7 R values, omega on [0, 20] step 2^-8, 2^15 steps | `07_thesis_fig5[145].png` |
+
+The original entry points `python sprott_solver.py` and `python lle_solver.py` still work (set
+`MPLBACKEND=Agg` on a headless box).
+
+## Bifurcation diagrams
+
+A bifurcation diagram plots a Poincare section of the attractor against a swept parameter. The
+system has two regimes that call for different sections, and `bifurcation.py` implements both.
+
+**Peak map** (`peak_map_batch`). Section: local maxima of x, i.e. crossings of x' = 0 with x'' < 0.
+This is the section Sprott uses for jerk systems and it works whether or not the forcing is on, so it
+is the one used for the sweep in R_c (unforced) and in R. A period-n orbit shows as n points per
+column, chaos as a band.
+
+**Stroboscopic map** (`stroboscopic_batch`). Section: the state sampled once per forcing period
+T = 2 pi / omega. This is the standard section for periodically forced oscillators and is the one
+that makes forcing-locked period-doubling clean. It needs omega > 0. To keep the sample stride a
+static integer under `vmap`, the time step is set per parameter to dt = T / 512, so every row of
+the batch takes the same number of steps per period while dt varies (0.049 at omega = 0.25, 0.0045
+at omega = 2.75).
+
+Both kernels return a fixed-length array plus a boolean mask (JAX needs static shapes) and only the
+x component is kept, so 1200 parameters x 80 000 steps fits in a few hundred MB. Rendering uses a
+per-column-normalised 2-D histogram with gamma 0.35 rather than a scatter: with millions of points a
+scatter is a uniform grey block, and per-column normalisation keeps a periodic orbit (few bins, high
+count) and a chaotic band (many bins, low count) both visible.
+
+Results from the ThinkPad test run are in `results/` and summarised in `docs/thinkpad-test-run.md`.
 
 ## Original Acknowledgements (2004)
 
